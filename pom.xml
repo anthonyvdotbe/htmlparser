@@ -75,6 +75,9 @@
   </scm>
 
   <properties>
+    <maven.compiler.source>1.5</maven.compiler.source>
+    <maven.compiler.target>1.5</maven.compiler.target>
+    <skipTests>true</skipTests>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -109,117 +112,120 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>${project.build.directory}/src</sourceDirectory>
-    <testSourceDirectory>${basedir}/test-src</testSourceDirectory>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.2.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.2.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.2.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.7</version>
+        <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
-            <id>intitialize-sources</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <delete dir="${project.build.sourceDirectory}"/>
-                <mkdir dir="${project.build.sourceDirectory}"/>
-                <copy todir="${project.build.sourceDirectory}">
-                  <fileset dir="${basedir}/src"/>
-                </copy>
-              </target>
-            </configuration>
-          </execution>
-          <execution>
-            <id>test</id>
-            <phase>test</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <property name="test_classpath" refid="maven.test.classpath"/>
-                <property name="failonerror" value="true"/>
-                <!-- We use fork="true" here because without it, when we run -->
-                <!-- Maven in GitHub Actions, we get an “Unable to find a -->
-                <!-- javac compiler” error — because Ant looks for javac in -->
-                <!-- the jre/ subdirectory of the JDK directory. -->
-                <javac srcdir="${project.build.testSourceDirectory}" destdir="${project.build.testOutputDirectory}" fork="true" includeantruntime="false">
-                  <classpath>
-                    <pathelement location="${project.build.outputDirectory}"/>
-                  </classpath>
-                </javac>
-                <!-- We use fork="true" here because without it, we otherwise get -->
-                <!-- java.lang.NoClassDefFoundError: jdk/internal/reflect/ConstructorAccessorImpl -->
-                <java classname="nu.validator.htmlparser.test.EncodingTester" fork="true" failonerror="${failonerror}">
-                  <classpath>
-                    <pathelement location="${project.build.outputDirectory}"/>
-                    <pathelement location="${project.build.testOutputDirectory}"/>
-                  </classpath>
-                  <arg value="${basedir}/html5lib-tests/encoding"/>
-                </java>
-                <java classname="nu.validator.htmlparser.test.TokenizerTester" fork="true" failonerror="${failonerror}">
-                  <classpath>
-                    <pathelement path="${test_classpath}"/>
-                    <pathelement location="${project.build.outputDirectory}"/>
-                    <pathelement location="${project.build.testOutputDirectory}"/>
-                  </classpath>
-                  <arg value="${basedir}/html5lib-tests/tokenizer"/>
-                </java>
-                <java classname="nu.validator.htmlparser.test.TreeTester" fork="true" failonerror="${failonerror}">
-                  <classpath>
-                    <pathelement location="${project.build.outputDirectory}"/>
-                    <pathelement location="${project.build.testOutputDirectory}"/>
-                  </classpath>
-                  <arg value="${basedir}/html5lib-tests/tree-construction"/>
-                </java>
-              </target>
-            </configuration>
-          </execution>
-          <execution>
-            <id>tokenizer-hotspot-workaround</id>
+            <id>backup-tokenizer</id>
             <phase>process-sources</phase>
             <goals>
-              <goal>run</goal>
+              <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <target>
-                <property name="translator.sources" value="${basedir}/translator-src"/>
-                <property name="translator.classes" value="${project.build.directory}/translator-classes"/>
-                <mkdir dir="${translator.classes}"/>
-                <!-- We use fork="true" here because without it, when we run -->
-                <!-- Maven in GitHub Actions, we get an “Unable to find a -->
-                <!-- javac compiler” error — because Ant looks for javac in -->
-                <!-- the jre/ subdirectory of the JDK directory. -->
-                <javac srcdir="${translator.sources}" includes="nu/validator/htmlparser/generator/ApplyHotSpotWorkaround.java" fork="true" destdir="${translator.classes}" includeantruntime="false"/>
-                <java classname="nu.validator.htmlparser.generator.ApplyHotSpotWorkaround">
-                  <classpath>
-                    <pathelement location="${translator.classes}"/>
-                  </classpath>
-                  <arg value="${project.build.sourceDirectory}/nu/validator/htmlparser/impl/Tokenizer.java"/>
-                  <arg value="${project.build.sourceDirectory}/nu/validator/htmlparser/impl/HotSpotWorkaround.txt"/>
-                </java>
-              </target>
+              <overwrite>true</overwrite>
+              <outputDirectory>${project.build.directory}/hotspot-backup</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>src/main/java/nu/validator/htmlparser/impl</directory>
+                  <includes>
+                    <li>Tokenizer.java</li>
+                  </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>restore-tokenizer</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <overwrite>true</overwrite>
+              <outputDirectory>src/main/java/nu/validator/htmlparser/impl</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/hotspot-backup</directory>
+                  <includes>
+                    <li>Tokenizer.java</li>
+                  </includes>
+                </resource>
+              </resources>
             </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>tokenizer-hotspot-workaround-javac</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>javac</executable>
+              <arguments>
+                <arg>${project.basedir}/src/hotspot/java/nu/validator/htmlparser/generator/ApplyHotSpotWorkaround.java</arg>
+                <arg>-d</arg>
+                <arg>${project.build.directory}/hotspot-classes</arg>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>tokenizer-hotspot-workaround-java</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>java</executable>
+              <arguments>
+                <arg>-cp</arg>
+                <arg>${project.build.directory}/hotspot-classes</arg>
+                <arg>nu.validator.htmlparser.generator.ApplyHotSpotWorkaround</arg>
+                <arg>${project.build.sourceDirectory}/nu/validator/htmlparser/impl/Tokenizer.java</arg>
+                <arg>${project.basedir}/src/hotspot/resources/HotSpotWorkaround.txt</arg>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
