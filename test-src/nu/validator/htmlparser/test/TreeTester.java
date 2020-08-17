@@ -24,6 +24,7 @@ package nu.validator.htmlparser.test;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,18 +40,22 @@ import org.xml.sax.SAXParseException;
 
 public class TreeTester {
 
-    private final BufferedInputStream aggregateStream;
+    private BufferedInputStream aggregateStream;
 
     private boolean streaming = false;
 
     /**
      * @param aggregateStream
      */
-    public TreeTester(InputStream aggregateStream) {
-        this.aggregateStream = new BufferedInputStream(aggregateStream);
+    public TreeTester() {
+        this.aggregateStream = null;
     }
 
-    private void runTests() throws Throwable {
+    private void runTests(String filename) throws Throwable {
+        if (!filename.endsWith(".dat")) {
+            return;
+        }
+        aggregateStream = new BufferedInputStream(new FileInputStream(filename));
         if (aggregateStream.read() != '#') {
             System.err.println("No hash at start!");
             return;
@@ -257,14 +262,35 @@ public class TreeTester {
         }
     }
 
+    private void recurseDirectory(File directory) throws Throwable {
+        if ("scripted".equals(directory.getName())) {
+            return;
+        }
+        if (directory.canRead()) {
+            File[] files = directory.listFiles();
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    recurseDirectory(file);
+                } else {
+                    runTests(file.getPath().toString());
+                }
+            }
+        }
+    }
+
     /**
      * @param args
      * @throws Throwable
      */
     public static void main(String[] args) throws Throwable {
         for (int i = 0; i < args.length; i++) {
-            TreeTester tester = new TreeTester(new FileInputStream(args[i]));
-            tester.runTests();
+            TreeTester tester = new TreeTester();
+            File file = new File(args[i]);
+            if (file.isDirectory()) {
+                tester.recurseDirectory(file);
+            } else {
+                tester.runTests(file.getPath().toString());
+            }
         }
     }
 

@@ -22,6 +22,8 @@
 
 package nu.validator.htmlparser.test;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +33,9 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import nu.validator.htmlparser.common.XmlViolationPolicy;
 import nu.validator.htmlparser.impl.ErrorReportingTokenizer;
@@ -97,6 +102,7 @@ public class TokenizerTester {
 
     private TokenizerTester(InputStream stream) throws TokenStreamException,
             RecognitionException, UnsupportedEncodingException {
+        tests = null;
         tokenHandler = new JSONArrayTokenHandler();
         driver = new Driver(new ErrorReportingTokenizer(tokenHandler));
         driver.setCommentPolicy(XmlViolationPolicy.ALLOW);
@@ -106,6 +112,9 @@ public class TokenizerTester {
         driver.setXmlnsPolicy(XmlViolationPolicy.ALLOW);
         driver.setErrorHandler(tokenHandler);
         writer = new OutputStreamWriter(System.out, "UTF-8");
+        if (stream == null) {
+            return;
+        }
         JSONParser jsonParser = new JSONParser(new InputStreamReader(stream,
                 "UTF-8"));
         JSONObject obj = (JSONObject) jsonParser.nextValue();
@@ -202,19 +211,48 @@ public class TokenizerTester {
         }
     }
 
+    private void recurseDirectory(File directory) throws Throwable {
+        if (directory.canRead()) {
+            File[] files = directory.listFiles();
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    recurseDirectory(file);
+                } else {
+                    test(file.getPath().toString());
+                }
+            }
+        }
+    }
+
+    private void test(String file)
+            throws IOException, TokenStreamException, RecognitionException,
+            SAXException {
+        if (!file.endsWith(".test")) {
+            return;
+        }
+        byte[] fileBytes = Files.readAllBytes(Paths.get(file));
+        String fileContent = new String(fileBytes, StandardCharsets.UTF_8);
+        String unescapedContent = fileContent.replace("\\\\u", "\\u");
+        byte[] newBytes = unescapedContent.getBytes(StandardCharsets.UTF_8);
+        ByteArrayInputStream bais = new ByteArrayInputStream(newBytes);
+        TokenizerTester tester = new TokenizerTester(bais);
+        tester.runTests();
+    }
+
+
     /**
      * @param args
-     * @throws RecognitionException
-     * @throws TokenStreamException
-     * @throws IOException
-     * @throws SAXException
+     * @throws Throwable
      */
-    public static void main(String[] args) throws TokenStreamException,
-            RecognitionException, SAXException, IOException {
+    public static void main(String[] args) throws Throwable {
         for (int i = 0; i < args.length; i++) {
-            TokenizerTester tester = new TokenizerTester(new FileInputStream(
-                    args[i]));
-            tester.runTests();
+            TokenizerTester tester = new TokenizerTester(null);
+            File file = new File(args[i]);
+            if (file.isDirectory()) {
+                tester.recurseDirectory(file);
+            } else {
+                tester.test(file.getPath().toString());
+            }
         }
     }
 
