@@ -125,6 +125,13 @@
                 </javac>
                 <!-- We use fork="true" here because without it, we otherwise get -->
                 <!-- java.lang.NoClassDefFoundError: jdk/internal/reflect/ConstructorAccessorImpl -->
+                <java classname="nu.validator.htmlparser.test.EncodingTester" fork="true" failonerror="${failonerror}">
+                  <classpath>
+                    <pathelement location="${project.build.outputDirectory}"/>
+                    <pathelement location="${project.build.testOutputDirectory}"/>
+                  </classpath>
+                  <arg value="${basedir}/html5lib-tests/encoding"/>
+                </java>
                 <java classname="nu.validator.htmlparser.test.TokenizerTester" fork="true" failonerror="${failonerror}">
                   <classpath>
                     <pathelement path="${test_classpath}"/>
