@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2007 Henri Sivonen
+ * Copyright (c) 2020 Mozilla Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a 
  * copy of this software and associated documentation files (the "Software"), 
@@ -67,6 +68,7 @@ public class TreeTester {
         }
     }
 
+    @SuppressWarnings("resource")
     private boolean runTest() throws Throwable {
         UntilHashInputStream stream = null;
         try {
