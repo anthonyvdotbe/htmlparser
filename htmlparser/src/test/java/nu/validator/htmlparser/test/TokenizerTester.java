@@ -56,7 +56,7 @@ import com.sdicons.json.parser.JSONParser;
 
 public class TokenizerTester {
 
-    private static int exitStatus = 0;
+    static int exitStatus = 0;
 
     private static JSONString PLAINTEXT = new JSONString("PLAINTEXT state");
 
@@ -102,7 +102,7 @@ public class TokenizerTester {
 
     private final Writer writer;
 
-    private TokenizerTester(InputStream stream) throws TokenStreamException,
+    TokenizerTester(InputStream stream) throws TokenStreamException,
             RecognitionException, UnsupportedEncodingException {
         tests = null;
         tokenHandler = new JSONArrayTokenHandler();
@@ -226,7 +226,7 @@ public class TokenizerTester {
         }
     }
 
-    private void test(String file)
+    void test(String file)
             throws IOException, TokenStreamException, RecognitionException,
             SAXException {
         if (!file.endsWith(".test")) {

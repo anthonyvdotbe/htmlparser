@@ -36,6 +36,8 @@ import org.xml.sax.SAXException;
 
 public class EncodingTester {
 
+    static int exitStatus = 0;
+
     private final InputStream aggregateStream;
 
     private final StringBuilder builder = new StringBuilder();
@@ -47,7 +49,7 @@ public class EncodingTester {
         this.aggregateStream = aggregateStream;
     }
 
-    private void runTests() throws IOException, SAXException {
+    void runTests() throws IOException, SAXException {
         while (runTest()) {
             // spin
         }
@@ -63,6 +65,7 @@ public class EncodingTester {
         Charset charset = reader.getCharset();
         stream.close();
         if (skipLabel()) {
+            exitStatus = 1;
             System.err.println("Premature end of test data.");
             return false;
         }
@@ -73,6 +76,7 @@ public class EncodingTester {
                 case '\n':
                     break loop;
                 case -1:
+                    exitStatus = 1;
                     System.err.println("Premature end of test data.");
                     return false;
                 default:
@@ -84,6 +88,7 @@ public class EncodingTester {
         if (expected.equalsIgnoreCase(sniffed)) {
             // System.err.println(stream);
         } else {
+            exitStatus = 1;
             System.err.println("Failure. Expected: " + expected + " got "
                     + sniffed + ".");
             System.err.println(stream);

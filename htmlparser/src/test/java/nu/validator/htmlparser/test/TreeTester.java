@@ -45,7 +45,7 @@ public class TreeTester {
 
     private boolean streaming = false;
 
-    private static int exitStatus = 0;
+    static int exitStatus = 0;
 
     /**
      * @param aggregateStream
@@ -54,7 +54,7 @@ public class TreeTester {
         this.aggregateStream = null;
     }
 
-    private void runTests(String filename) throws Throwable {
+    void runTests(String filename) throws Throwable {
         if (!filename.endsWith(".dat")) {
             return;
         }
